@@ -9,6 +9,9 @@ import { Footer } from './footer'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Actions } from '@/components/actions'
 import { MoreHorizontal } from 'lucide-react'
+import { useApiMutation } from '@/hooks/use-api-mutation'
+import { api } from '@/convex/_generated/api'
+import { toast } from 'sonner'
 
 interface BoardCardProps{
 	id: string,
@@ -29,6 +32,20 @@ export const BoardCard = ({id, title, authorName, authorId, createdAt, imageUrl,
 		addSuffix: true,
 	})
 
+	const { mutate: onFavorite, pending: pendingfavorite } = useApiMutation(api.board.favorite)
+
+	const {mutate: onUnFavorite, pending: pendingUnfavorite } = useApiMutation(api.board.unFavorite)
+
+	const toggleFavorite = () => {
+		if(isFavorite){
+			onUnFavorite({ id })
+			.catch(() => toast.error('Failed to unfavorite'))
+		}else{
+			onFavorite({ id, orgId })
+			.catch(() => toast.error('Failed to favorite'))
+		}
+	}
+
 	return (
 		<Link href={`/board/${id}`}>
 			<div className='group aspect-[100/127] border rounded-lg flex flex-col justify-between overflow-hidden'>
@@ -44,7 +61,7 @@ export const BoardCard = ({id, title, authorName, authorId, createdAt, imageUrl,
 						</button>
 					</Actions>
 				</div>
-				<Footer isFavorite={isFavorite} title={title} authorLabel={authorLabel} createdAtLabel={createdAtLabel} onClick={()=>{}} disabled={false}/>
+				<Footer isFavorite={isFavorite} title={title} authorLabel={authorLabel} createdAtLabel={createdAtLabel} onClick={toggleFavorite} disabled={pendingfavorite || pendingUnfavorite}/>
 			</div>
 		</Link>
 	)
