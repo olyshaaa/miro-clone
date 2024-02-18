@@ -1,14 +1,22 @@
 'use client'
 
 import { nanoid } from 'nanoid'
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Info } from './info'
 import { Participants } from './participants'
 import { ToolBar } from './toolbar'
 import { Camera, CanvasMode, CanvasState, Color, LayerType, Point } from '@/types/canvas'
-import { useHistory, useCanUndo, useCanRedo, useMutation, useStorage } from '@/liveblocks.config'
+import {
+	useHistory,
+	useCanUndo,
+	useCanRedo,
+	useMutation,
+	useStorage,
+	useOthersMapped,
+	useSelf,
+  } from "@/liveblocks.config";
 import { CursorsPresence } from './cursors-presence'
-import { pointerEventToCanvasPoint } from '@/lib/utils'
+import { connectionIdToColor, pointerEventToCanvasPoint } from '@/lib/utils'
 import { LiveObject } from '@liveblocks/client'
 import { LayerPreview } from './layer-preview'
 
@@ -61,6 +69,7 @@ export const Canvas = ({boardId}:CanvasProps) => {
 		liveLayers.set(layerId, layer);
 
 		setMyPresence({ selection: [layerId] }, { addToHistory: true });
+		console.log([layerId])
 		setCanvasState({ mode: CanvasMode.None });
 	  }, [lastUsedColor]);
 
@@ -112,6 +121,61 @@ export const Canvas = ({boardId}:CanvasProps) => {
 		insertLayer
 	])
 
+	const selections = useOthersMapped((other) => {
+		console.log("Other user's selections:", other.presence.selection);
+		return other.presence.selection;
+	  });
+	console.log({selections: selections})
+
+	const onLayerPointerDown = useMutation((
+		{ self, setMyPresence },
+		e: React.PointerEvent,
+		layerId: string,
+	  ) => {
+		if (
+		  canvasState.mode === CanvasMode.Pencil ||
+		  canvasState.mode === CanvasMode.Inserting
+		) {
+		  return;
+		}
+
+		history.pause();
+		e.stopPropagation();
+
+		const point = pointerEventToCanvasPoint(e, camera);
+		console.log(layerId + 'LAYER_ID')
+		console.log({selfpresenceselection: self.presence.selection})
+		console.log({self: self})
+		console.log({selfPresence: self.presence})
+
+		if (!self.presence.selection.includes(layerId)) {
+			setMyPresence({ selection: [layerId] }, { addToHistory: true });
+		}
+		setCanvasState({ mode: CanvasMode.Translating, current: point });
+	  },
+	  [
+		setCanvasState,
+		camera,
+		history,
+		canvasState.mode,
+	  ]);
+
+	  const layerIdsToColorSelection = useMemo(() => {
+		const layerIdsToColorSelection: Record<string, string> = {};
+
+		for (const user of selections) {
+		  const [connectionId, selection] = user;
+		  console.log({selections: selections})
+		  console.log(connectionId + ' connectionId')
+
+		  for (const layerId of selection) {
+			layerIdsToColorSelection[layerId] = connectionIdToColor(connectionId)
+		  }
+		}
+
+		return layerIdsToColorSelection;
+	  }, [selections]);
+
 	return(
 		<main
 			className='h-full w-full relative bg-neutral-100 touch-none'
@@ -130,7 +194,7 @@ export const Canvas = ({boardId}:CanvasProps) => {
 					transform: `translate(${camera.x}px, ${camera.y}px)`
 				}}>
 					{layerIds.map(layerId => (
-						<LayerPreview key={layerId} id={layerId} onLayerPointerDown={()=>{}} selectionColor='#000'/>
+						<LayerPreview key={layerId} id={layerId} onLayerPointerDown={onLayerPointerDown} selectionColor={layerIdsToColorSelection[layerId]}/>
 					))}
 					<CursorsPresence />
 				</g>
