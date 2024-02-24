@@ -27,7 +27,6 @@ export const LayerPreview = memo(({ id, onLayerPointerDown, selectionColor }: La
 				/>
 			)
 		default:
-			console.log('Unknown layertype')
 			return null
 	}
 })
