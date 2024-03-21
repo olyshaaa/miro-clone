@@ -20,6 +20,7 @@ import { connectionIdToColor, pointerEventToCanvasPoint, resizeBounds } from '@/
 import { LiveObject } from '@liveblocks/client'
 import { LayerPreview } from './layer-preview'
 import { SelectionBox } from './selection-box'
+import { SelectionTools } from './selection-tools'
 
 const MAX_LAYERS = 100
 
@@ -273,6 +274,10 @@ export const Canvas = ({boardId}:CanvasProps) => {
 			<Info boardId={boardId}/>
 			<Participants />
 			<ToolBar canvasState={canvasState} setCanvasState={setCanvasState} canRedo={canRedo} undo={history.undo} redo={history.redo} canUndo={canUndo}/>
+			<SelectionTools
+				camera={camera}
+				setLastUsedColor={setLastUsedColor}
+			/>
 			<svg
 				className='h-[100vh] w-[100vw]'
 				onWheel={onWheel}
