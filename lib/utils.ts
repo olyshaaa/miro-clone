@@ -1,4 +1,5 @@
-import { Camera, Color, Point, Side, XYWH } from '@/types/canvas'
+import { Rectangle } from '@/app/board/[boardId]/_components/rectangle'
+import { Camera, Color, Layer, Point, Side, XYWH } from '@/types/canvas'
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 
@@ -57,4 +58,41 @@ export function resizeBounds(bounds: XYWH, corner: Side, point: Point): XYWH{
   }
 
   return result
+}
+
+export function findIntersectingLayersWithRectangle(
+  layerIds: readonly string[],
+  layers: ReadonlyMap<string, Layer>,
+  a: Point,
+  b: Point,
+){
+  const rect = {
+    x: Math.min(a.x, b.x),
+    y: Math.min(a.y - b.y),
+    width: Math.abs(a.x - b.x),
+    height: Math.abs(a.y - b.y)
+  }
+
+  const ids = []
+
+  for (const layerid of layerIds){
+    const layer = layers.get(layerid)
+
+    if (layer == null){
+      continue
+    }
+
+    const {x, y, height, width} = layer
+
+    if (
+      rect.x + rect.width > x &&
+      rect.x < x + width &&
+      rect.y + rect.height > y &&
+      rect.y < y + height
+    ){
+      ids.push(layerid)
+    }
+  }
+
+  return ids
 }
